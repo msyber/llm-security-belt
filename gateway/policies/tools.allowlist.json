@@ -1,0 +1,18 @@
+{
+  "tools": [
+    {
+      "name": "search_docs",
+      "args": {
+        "q": "string"
+      },
+      "enabled": true
+    },
+    {
+      "name": "calc",
+      "args": {
+        "expression": "string"
+      },
+      "enabled": true
+    }
+  ]
+}

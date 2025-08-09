@@ -1,0 +1,22 @@
+name: LLM Evals (Node)
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install gateway deps
+        working-directory: ./gateway
+        run: npm ci || npm install
+      - name: Run evals (fail on errors)
+        env:
+          GATEWAY_URL: ${{ secrets.GATEWAY_URL }}
+        run: node evals/run.mjs

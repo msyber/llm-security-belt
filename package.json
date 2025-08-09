@@ -1,0 +1,11 @@
+{
+  "name": "llm-security-belt",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "demo": "cd gateway && npm install && cp -n .env.example .env || true && node server.js",
+    "evals": "node evals/run.mjs",
+    "dev": "cd gateway && node --watch server.js"
+  }
+}
