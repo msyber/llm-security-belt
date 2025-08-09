@@ -13,10 +13,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+
       - name: Install gateway deps
         working-directory: ./gateway
         run: npm ci || npm install
+
+      - name: Start gateway (mock) in background
+        working-directory: ./gateway
+        run: |
+          nohup node server.js > /tmp/gw.log 2>&1 &
+          for i in {1..30}; do
+            curl -sSf http://localhost:8787/metrics && break
+            sleep 1
+          done
+
       - name: Run evals (fail on errors)
         env:
-          GATEWAY_URL: ${{ secrets.GATEWAY_URL }}
+          GATEWAY_URL: http://localhost:8787
         run: node evals/run.mjs
+
+      - name: Show gateway logs (always)
+        if: always()
+        run: |
+          echo "--- /tmp/gw.log (tail) ---"
+          tail -n 200 /tmp/gw.log || true
