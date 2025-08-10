@@ -1,0 +1,2 @@
+example.com
+internal.mycorp.com
