@@ -2,9 +2,13 @@
   "name": "LLM Security Belt",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
   "postCreateCommand": "cd gateway && npm ci || npm install",
-  "postStartCommand": "cd gateway && node server.js &>/tmp/gw.log &",
+  "postStartCommand": "bash .devcontainer/start-gateway.sh",
   "forwardPorts": [8787],
   "portsAttributes": {
-    "8787": { "label": "LLM Gateway", "onAutoForward": "openBrowser", "visibility": "public" }
+    "8787": {
+      "label": "LLM Gateway",
+      "onAutoForward": "openBrowser",
+      "visibility": "public"
+    }
   }
 }
