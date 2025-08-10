@@ -1,17 +1,121 @@
-# LLM Security Belt — Node-only Demo
+# LLM Security Belt — A 20-Minute Demo
 
-**Outcome**: Block 5/10 common LLM risks in ~20 minutes.  
-**Playbook**: 1) Gateway 2) Policies (deny-by-default) 3) Evals in CI.  
-**Mini-visual**: “Before/After” table is shown in the UI.  
-**Derived number**: Residual Exposure (demo proxy) ≈ `1 − blocked/total` (illustrative).  
-**References**: OWASP LLM Top‑10, NIST GAI Profile.
+**Purpose (TL;DR)**  
+Show, in 2 minutes, how a tiny gateway + policies + CI **reduce LLM risk** *without changing models*.
 
-## Quickstart
+**Who it’s for**  
+Engineers, PMs, and Security teams who want a **minimal, copy-pasteable pattern** for safer LLM features.
+
+**What you’ll see**  
+- Live UI: **safe** → 200, **attack** → 400 (with reasons)  
+- Policies that matter: **URL allowlist**, **deny-by-default tools**, **JSON schema on output**  
+- CI job that **fails** if protections don’t hold (LLM01/LLM02 evals)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/msyber/llm-security-belt?quickstart=1)
+![LLM Evals](https://github.com/msyber/llm-security-belt/actions/workflows/llm-evals.yml/badge.svg)
+
+---
+
+## Live demo
+
+### Option A — Codespaces (1-click)
+1. Click the badge above.  
+2. Wait for port **8787** to open; set it **Public** to share.  
+3. Open the URL (…`app.github.dev`) and use the demo page.
+
+### Option B — Local
 ```bash
-npm run demo    # starts gateway on http://localhost:8787 (mock provider)
-npm run evals   # runs Node evals (LLM01/02 + JSON schema)
+npm run demo       # starts the mock gateway
+# open http://localhost:8787
 ```
 
-## Files in this pack
-- `gateway/public/index.html` — aligned wording (title, chips), Playbook (3 steps), Before/After table, accessible UI.
-- `evals/tests.json` — test names aligned to OWASP (LLM01/02).
+**Try in the UI**
+- “Safe JSON” → **200 OK**  
+- “Non-allowlisted URL” → **400** (blocked: domain)  
+- “Jailbreak” with **Expect JSON** → **400** (blocked: not_json/schema)
+
+---
+
+## Quick start (local)
+Requirements: **Node 20+**
+```bash
+npm run demo   # run gateway on http://localhost:8787
+npm run evals  # LLM01/LLM02 + JSON schema tests → PASS/FAIL
+```
+
+---
+
+## How it works
+
+**Flow**
+```
+UI → POST /chat → Gateway
+        1) sanitize input
+        2) block non-allowlisted URLs
+        3) enforce tool allowlist
+        4) (optional) validate output JSON schema
+   ← 200 OK or 400 Blocked (with reason)
+```
+
+**Policies** (`gateway/policies/`)
+- `domains.allowlist.txt` — allowed hostnames (one per line)  
+- `tools.allowlist.json` — allowed tool names + arg keys  
+- `output.schema.json` — expected JSON when “Expect JSON” is on
+
+**Endpoints**
+- `POST /chat` — main call  
+- `GET /metrics` — `{ total, allowed, blocked }`  
+- `GET /events` — live events (SSE)  
+- `POST /demo/policy` — `{ enforceUrlAllowlist: true|false }` (demo toggle)
+
+---
+
+## Configure / extend
+
+- Add domains → `gateway/policies/domains.allowlist.txt`  
+- Adjust output schema → `gateway/policies/output.schema.json`  
+- Tighten tools → `gateway/policies/tools.allowlist.json`  
+- Switch providers in `gateway/.env`:
+  - `PROVIDER=mock` (default)
+  - `PROVIDER=openai` + `OPENAI_API_KEY=…`
+  - `PROVIDER=azure` + endpoint/key/deployment
+
+---
+
+## CI (LLM Evals)
+
+Workflow: `.github/workflows/llm-evals.yml`
+- Installs gateway deps  
+- **Starts the mock gateway** in background, waits on `/metrics`  
+- Runs `evals/run.mjs` against `http://localhost:8787`  
+- Fails the build on any failed eval
+
+**Recommended branch protection**
+- Require PRs and **status check** “LLM Evals (Node)” on `main`
+
+---
+
+## Project structure
+```
+gateway/
+  server.js                # Express gateway
+  public/index.html        # Live demo UI (accessible)
+  policies/
+    domains.allowlist.txt
+    tools.allowlist.json
+    output.schema.json
+evals/
+  run.mjs                  # Node eval runner
+  tests.json               # LLM01/LLM02 + schema
+.github/workflows/
+  llm-evals.yml            # CI evals (local mock)
+```
+
+---
+
+## Security notes
+
+This is a **teaching/demo** gateway. For production you’ll likely:
+- Add deeper content filtering & red-team evals
+- Expand schemas, rate limits, and observability
+- Run behind your API gateway/WAF
